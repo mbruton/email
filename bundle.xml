@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adapt_framework>
+  <bundle>
+    <label>Adapt Email</label>
+    <name>email</name>
+    <type>extension</type>
+    <version>1.0.0</version>
+    <namespace>/extension/email</namespace>
+    <description>Provides SMTP and MIME encoding</description>
+    <copyright>2015 Adapt Framework</copyright>
+    <license>MIT</license>
+    <settings>
+      <category name="SMTP">
+        <setting>
+          <name>email.smtp_localhost_name</name>
+          <label>The FQD of the localehost sending the email</label>
+          <default_value>localhost</default_value>
+        </setting>
+        <setting>
+          <name>email.smtp_host</name>
+          <label>The host being used to relay the email</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.smtp_port</name>
+          <label>Port number of the SMTP server</label>
+          <default_value>25</default_value>
+        </setting>
+        <setting>
+          <name>email.smtp_security_layer</name>
+          <label>Should the connection be secure?</label>
+          <default_value>NO_SECURITY</default_value>
+          <allowed_values>
+            <value>NO_SECURITY</value>
+            <value>SSL</value>
+            <value>TLS</value>
+          </allowed_values>
+        </setting>
+        <setting>
+          <name>email.smtp_username</name>
+          <label>Username</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.smtp_password</name>
+          <label>Password</label>
+          <default_value />
+        </setting>
+      </category>
+      <category name="IMAP">
+        <setting>
+          <name>email.imap_host</name>
+          <label>The IMAP host or IP</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.imap_port</name>
+          <label>Port number of the IMAP server</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.imap_username</name>
+          <label>Username</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.imap_password</name>
+          <label>Password</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.imap_options</name>
+          <label>Options</label>
+          <default_value />
+        </setting>
+        <setting>
+          <name>email.imap_folder</name>
+          <label>Folder</label>
+          <default_value>INBOX</default_value>
+        </setting>
+      </category>
+    </settings>
+  </bundle>
+</adapt_framework>
