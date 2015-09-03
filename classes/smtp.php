@@ -11,6 +11,345 @@ namespace extensions\email{
         const SSL = 1;
         const TLS = 2;
         
+        protected $_local_hostname;
+        protected $_relay = array();
+        protected $_from;
+        protected $_to = array();
+        protected $_data;
+        
+        public function __construct($local_hostname = 'localhost'){
+            parent::__construct();
+        }
+        
+        public function relay_via($smtp_hostname, $smtp_port = 25, $smtp_security = 0, $smtp_username = null, $smtp_password = null){
+            $this->_relay = array(
+                'hostname' => $smtp_hostname,
+                'port' => $smtp_port,
+                'security' => $smtp_security,
+                'username' => $smtp_username,
+                'password' => $smtp_password
+            );
+            return $this;
+        }
+        
+        public function from($sender_email){
+            $this->_from = $sender_email;
+            return $this;
+        }
+        
+        public function to($recipient_email){ /* $recipient_email can be an array */
+            if (is_array($recipient_email)){
+                $this->_to = array_merge($this->_to, $recipient_email);
+            }else{
+                $this->_to[] = $recipient_email;
+            }
+            return $this;
+        }
+        
+        public function data($message_to_send){
+            $this->_data = $message_to_send;
+            return $this;
+        }
+        
+        public function send(){
+            /*
+             * Are we sending directly or are we
+             * relaying?
+             */
+            if (isset($this->_relay['hostname']) && isset($this->_relay['port']) && is_int($this->_relay['port'])){
+                $connection = $this->open_connection($this->_relay['hostname'], $this->_relay['port'], $this->_relay['security'], $this->_relay['username'], $this->_relay['password']);
+                if ($connection){
+                    return $this->send_via_connection($connection);
+                }else{
+                    $this->error("Unable to relay via {$this->_relay['hostname']}:{$this->_relay['port']}, a connection could not be made.");
+                }
+            }else{
+                /*
+                 * We need to get a list of domains and email addresses
+                 * that we are sending to.
+                 */
+                $domains = array();
+                foreach($this->_to as $email){
+                    list($recipient, $domain) = explode("@", $email);
+                    if ($domain && $recipient){
+                        if (!is_array($domains[$domain])){
+                            $domains[$domain] = array($recipient);
+                        }else{
+                            if (!in_array($recipient, $domains[$domain])){
+                                $domains[$domain][] = $recipient;
+                            }
+                        }
+                    }
+                }
+                
+                /*
+                 * We need to get a list of mail servers
+                 * for each domain
+                 */
+                $hosts = array();
+                
+                foreach(array_keys($domains) as $domain){
+                    $records = array();
+                    if (getmxrr($domain, $records)){
+                        $hosts[$domain] = $records;
+                    }else{
+                        $this->error("Unable to find any MX records for '{$domain}', sending mail to '{$domain}' as per RFC2821.");
+                        $hosts[$domain] = array($domain);
+                    }
+                }
+                
+                /*
+                 * Lets open a connection to each
+                 * domain and send the mail
+                 */
+                $valid = true;
+                foreach($hosts as $domain => $servers){
+                    $connection = null;
+                    foreach($servers as $host){
+                        if ($connection = $this->open_connection($host, 25)){
+                            break;
+                        }
+                    }
+                    
+                    if (!is_null($connection)){
+                        $this->send_via_connection($connection, $domain);
+                    }else{
+                        $this->error("Unable to send mail to '{$domain}' - no valid mail host could be found.");
+                        $valid = false;
+                    }
+                }
+                
+                return $valid;
+            }
+            
+            return false;
+        }
+        
+        protected function send_via_connection($connection, $limit_to_domain = null){
+            /* $domain = 'adaptframework.com' is used to limit sending to a single domain, else we'd be using others to relay our message  */
+            
+            $code = null;
+            $response = null;
+            
+            $output = true;
+            
+            /* Lets get a list of recipients */
+            $recipients = array();
+            
+            foreach($this->_to as $email){
+                list($recipient, $domain) = explode("@", $email);
+                if ($domain && $recipient){
+                    if (is_null($limit_to_domain)){
+                        if (!in_array($email, $recipients)){
+                            $recipients[] = $email;
+                        }
+                    }else{
+                        if ($domain == $limit_to_domain){
+                            if (!in_array($email, $recipients)){
+                                $recipients[] = $email;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            /* Do we have any recipients? */
+            if (count($recipients)){
+                /*
+                 * Set the sender
+                 */
+                if ($this->request($connection, "MAIL FROM: <{$this->_from}>", $code, $connection)){
+                    if ($code == "250"){
+                        
+                        /*
+                         * Set the recipients
+                         */
+                        
+                        foreach($recipients as $email){
+                            if ($this->request($connection, "RCPT TO: <{$mail}>", $code, $response)){
+                                if (!in_array($code, array("250", "251"))){
+                                    $this->error("The smtp server rejected the recipient '{$email}' with the error {$code}: {$response}");
+                                    $output = false;
+                                }
+                            }
+                        }
+                        
+                        if ($output == true){
+                           /*
+                            * Only send the message if we are error free
+                            */
+                            if ($this->request($connection, "DATA", $code, $response)){
+                                
+                                if ($code == "354"){
+                                    /* The smtp server is allowing us to send the message */
+                                    if ($this->request($connection, $this->_data . "\r\n.", $code, $response)){
+                                        if ($code != 250){
+                                            $this->error("The smtp server rejected the message with the error {$code}: {$response}");
+                                            $output = false;
+                                        }
+                                    }
+                                }else{
+                                    $this->error("The smtp server refused the message with the error {$code}: {$response}");
+                                    $output = false;
+                                }
+                            }
+                        }
+                        
+                        
+                    }else{
+                        $this->error("The smtp server rejected the sender '{$this->_from}' with the error {$code}: {$response}");
+                        $output = false;
+                    }
+                }
+            }else{
+                $output = false;
+            }
+            
+            /* Close the connection */
+            $this->request($connection, "QUIT", $code, $response);
+            fclose($connection);
+            
+            return $output;
+        }
+        
+        protected function open_connection($host, $port, $security, $username = null, $password = null){
+            $error = null;
+            $error_string = null;
+            if ($security == self::SSL){
+                $host = "ssl://{$host}";
+            }
+            
+            $connection = fsockopen($host, $port, $error, $error_string, 30); //TODO: Make the timeout a setting
+            
+            if ($connection){
+                $code = null;
+                $response = null;
+                $this->parse_response(fgets($connection), $code, $response);
+                
+                if ($code == '220'){
+                    if (preg_match("/esmtp/i", $response)){
+                        /* ESMTP Host so lets handshake with EHLO */
+                        
+                        if ($this->request($connection, "EHLO" . is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname, $code, $response)){
+                            if ($code != "250"){
+                                /* Unexpected response */
+                                $this->error("{$code}: {$error}");
+                                fclose($connection);
+                                return null;
+                            }
+                        }else{
+                            /* Handshake failed */
+                            $this->error("Unable to connect to esmtp '{$host}': Handshake failed");
+                            fclose($connection);
+                            return null;
+                        }
+                        
+                    }else{
+                        /* Old school smtp server */
+                        if ($this->request($connection, "HELO" . is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname, $code, $response)){
+                            if ($code != "250"){
+                                /* Unexpected response */
+                                $this->error("{$code}: {$error}");
+                                fclose($connection);
+                                return null;
+                            }
+                        }else{
+                            /* Handshake failed */
+                            $this->error("Unable to connect to smtp '{$host}': Handshake failed");
+                            fclose($connection);
+                            return null;
+                        }
+                    }
+                    
+                    /*
+                     * Do we need to enable TLS?
+                     */
+                    if ($security == self::TLS){
+                        if ($this->request($connection, "STARTTLS", $code, $response)){
+                            
+                            /* Lets enable TLS */
+                            if (false == stream_socket_enable_crypto($connection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)){
+                                /* TLS Failed */
+                                $this->error('Unable to start TLS for ' . $host);
+                                fclose($connection);
+                                return null;
+                            }
+                            
+                        }else{
+                            /* Something went wrong :/ */
+                            $this->error('Unable to start TLS for ' . $host);
+                            fclose($connection);
+                            return null;
+                        }
+                    }
+                    
+                    /*
+                     * Do we need to login?
+                     */
+                    if ($username && $password){
+                        if ($this->request($connection, "AUTH LOGIN", $code, $response)){
+                            if ($this->request($connection, base64_encode($this->username), $code, $response)){
+                                if ($this->request(base64_encode($this->password), $code, $response)){
+                                    if ($code != "235"){
+                                        $this->error("Unable to authenticate againist {$host} - Server responded with {$code}: {$response}");
+                                        fclose($connection);
+                                        return null;
+                                    }
+                                }
+                            }
+                        }else{
+                            $this->error("Unable to authenticate against '{$host}' - Authentication may not be supported");
+                            fclose($connection);
+                            return null;
+                        }
+                    }
+                    
+                    return $connection;
+                    
+                }else{
+                    /* The host didn't respond with what we were looking for :( */
+                    $this->error("{$code}: {$error}");
+                    fclose($connection);
+                }
+            }else{
+                $this->error("Unable to connect to '{$host}': {$error} - {$error_string}");
+            }
+            
+            return null;
+        }
+        
+        protected function parse_response($response, &$code, &$data){
+            if (strlen($response) >= 3){
+                $code = substr($response, 0, 3);
+                if (strlen($response) > 3){
+                    $data = trim(substr($response, 3));
+                }
+            }
+        }
+        
+        protected function request($connection, $command, &$response_code, &$response_description){
+            if ($connection){
+                $response_code = "";
+                $response_description = "-";
+                fputs($connection, $command . "\r\n");
+                
+                while (substr($response_description, 0, 1) == "-"){ //To work around a PHP bug on debian
+                    $this->parse_response(fgets($connection), $response_code, $response_description);
+                }
+                
+                return true;
+            }
+            
+            return false;
+        }
+    }
+    
+    class smtp_old extends \frameworks\adapt\base{
+        
+        const NO_SECURITY = 0;
+        const SSL = 1;
+        const TLS = 2;
+        
         protected $connection;
         protected $host;
         protected $port;
@@ -23,14 +362,16 @@ namespace extensions\email{
         protected $esmtp_support;
         protected $last_error;
         
-        public function __construct($localhost, $host, $port, $security = 0, $username = null, $passowrd = null){ //Should also construct with username / password
-            $this->localhost = $localhost;
+        public function __construct($localhost_name = null, $host = null, $port = 25, $security = 0, $username = null, $password = null){ //Should also construct with username / password
+            $this->localhost = $localhost_name;
             $this->host = $host;
             $this->port = $port;
             $this->security = $security;
             $this->esmtp_support = false;
             $this->username = $username;
-            $this->password = $passowrd;
+            $this->password = $password;
+            
+            
         }
         
         public function open_connection(){
