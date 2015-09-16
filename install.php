@@ -15,6 +15,7 @@ $sql->create_table('email_account')
     ->add('name', 'varchar(64)') //Not required for user created accounts
     ->add('label', 'varchar(64)')
     ->add('description', 'text')
+    ->add('priority', 'int', false) //Lowest is considered the default
     ->add('imap_hostname', 'varchar(256)')
     ->add('imap_port', 'int', true, '993')
     ->add('imap_username', 'varchar(256)')
@@ -66,7 +67,7 @@ $sql->create_table('email_folder')
     ->add('email_folder_id', 'bigint')
     ->add('email_account_id', 'bigint')
     ->add('parent_email_folder_id', 'bigint')
-    ->add('type', "enum('Inbox', 'Sent items', 'Drafts', 'Trash', 'Folder', 'Templates')", false, 'Folder')
+    ->add('type', "enum('Inbox', 'Outbox', 'Sent items', 'Drafts', 'Trash', 'Folder', 'Templates')", false, 'Folder')
     ->add('imap_name', 'varchar(256)')
     ->add('label', 'varchar(64)', false)
     ->add('description', 'text')
@@ -139,6 +140,7 @@ $account = new model_email_account();
 $account->name = 'default';
 $account->label = 'Default';
 $account->description = 'This is the default account used to send emails.';
+$account->priority = 1;
 $account->save();
     
 

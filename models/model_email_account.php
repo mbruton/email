@@ -23,7 +23,98 @@ namespace extensions\email{
         
         /* Load default account */
         public function load_default(){
+            $result = $this->data_source->sql
+                ->select('*')
+                ->from('email_account')
+                ->where(
+                    new \frameworks\adapt\sql_condition(
+                        $this->data_source->sql('date_deleted'),
+                        'is',
+                        $this->data_source->sql('null')
+                    )
+                )
+                ->order_by('priority')
+                ->limit(1)
+                ->execute()
+                ->results();
             
+            if (is_array($result) && count($result) == 1){
+                return $this->load_by_data($result);
+            }
+        }
+        
+        public function new_email(){
+            $email = new model_email();
+            $folder = $this->get_drafts();
+            $email->add($folder);
+            return $email;
+        }
+        
+        public function new_email_from_template($template_name){
+            $templates = $this->get_templates();
+            if ($templates && $templates instanceof \frameworks\adapt\model && $templates->table_name == 'email_folder'){
+                $result = $this
+                    ->data_source
+                    ->sql
+                    ->select('*')
+                    ->from('email')
+                    ->where(
+                        new \frameworks\adapt\sql_and(
+                            new \frameworks\adapt\sql_condition(
+                                $this->data_source->sql('date_deleted'),
+                                'is',
+                                $this->data_source->sql('null')
+                            ),
+                            new \frameworks\adapt\sql_condition(
+                                $this->data_source->sql('email_folder_id'),
+                                '=',
+                                $templates->email_folder_id
+                            ),
+                            new \frameworks\adapt\sql_condition(
+                                $this->data_source->sql('name'),
+                                '=',
+                                $template_name
+                            )
+                        )
+                    )
+                    ->execute()
+                    ->results();
+                
+                if (is_array($result) && count($result) == 1){
+                    $template = new model_email();
+                    if ($template->load_by_data($result)){
+                        $email = $template->copy();
+                        
+                        /* Remove the folder */
+                        for($i = 0; $i < $email->count(); $i++){
+                            $child = $email->get($i);
+                            if ($child && $child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder'){
+                                $email->remove($i);
+                            }
+                        }
+                        
+                        /* Add the drafts folder */
+                        $folder = $this->get_drafts();
+                        $email->add($folder);
+                        
+                        /* Set the flags */
+                        $email->template = 'No';
+                        $email->draft = 'Yes';
+                        $email->sent = 'No';
+                        $email->queued_to_send = 'No';
+                        $email->received = 'No';
+                        $email->seen = 'No';
+                        $email->flagged = 'No';
+                        $email->answered = 'No';
+                        
+                        return $email;
+                    }
+                }else{
+                    $this->error("Unable to find template '{$template_name}' in this account");
+                }
+            }
+            
+            return null;
         }
         
         
@@ -36,6 +127,12 @@ namespace extensions\email{
                 $folder = new model_email_folder();
                 $folder->type = 'Inbox';
                 $folder->label = 'Inbox';
+                $this->add($folder);
+                
+                /* Outbox */
+                $folder = new model_email_folder();
+                $folder->type = 'Outbox';
+                $folder->label = 'Outbox';
                 $this->add($folder);
                 
                 /* Drafts */
@@ -431,6 +528,17 @@ namespace extensions\email{
             return null;
         }
         
+        public function get_outbox(){
+            $children = $this->get();
+            foreach($children as $child){
+                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Outbox'){
+                    return $child;
+                }
+            }
+            
+            return null;
+        }
+        
         public function get_sent_items(){
             $children = $this->get();
             foreach($children as $child){
@@ -482,7 +590,50 @@ namespace extensions\email{
          * this function *is* blocking.
          */
         public function send($model_email){
+            if ($this->save_to_outbox($model_email)){
+                
+                $email = $model_email->render();
+                if ($email && $email != ""){
+                    
+                    /* Create a new SMTP instance */
+                    $smtp = new smtp();
+                    
+                    /* Do we have relay information? */
+                    if ($this->smtp_hostname){
+                        $smtp->relay_via($this->smtp_hostname, $this->smtp_port, $this->smtp_security, $this->smtp_username, $this->smtp_password);
+                    }
+                    
+                    $smtp->from($this->sender_email);
+                    
+                    $children = $model_email->get();
+                    
+                    foreach($children as $child){
+                        if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient'){
+                            $smtp->to($child->recipient_email);
+                        }
+                    }
+                    
+                    $smtp->data($email);
+                    
+                    $success = $smtp->send();
+                    if ($success){
+                        
+                        return $this->save_to_sent_items($model_email);
+                        
+                    }else{
+                        $errors = $smtp->errors(true);
+                        foreach($errors as $error){
+                            $this->error($error);
+                        }
+                    }
+                    
+                }else{
+                    $this->error("Email is empty");
+                }
+                
+            }
             
+            return false;
         }
         
         /*
@@ -490,7 +641,91 @@ namespace extensions\email{
          * in the next scheduled cycle.
          */
         public function queue($model_email){
+            if ($this->save_to_outbox($model_email)){
+                /* Set the queued_to_send flag */
+                $model_email->queued_to_send = 'Yes';
+                return $model_email->save();
+            }
             
+            return false;
+        }
+        
+        /*
+         * Helper functions
+         */
+        public function save_to_sent_items($model_email){
+            $output = false;
+            if ($this->is_loaded){
+                $sent_items = $this->get_sent_items();
+                if ($sent_items && $sent_items instanceof \frameworks\adapt\model && $sent_items->table_name == 'email_folder'){
+                    $model_email->email_folder_id = $sent_items->email_folder_id;
+                    $model_email->template = 'No';
+                    $model_email->draft = 'No';
+                    $model_email->sent = 'Yes';
+                    $model_email->queued_to_send = 'No';
+                    $model_email->received = 'No';
+                    $model_email->seen = 'No';
+                    $model_email->flagged = 'No';
+                    $model_email->answered = 'No';
+                    $output = $model_email->save();
+                }else{
+                    $this->error("Unable to find the sent items folder");
+                }
+            }else{
+                $this->error("Unable to save email to sent items, email account not loaded.");
+            }
+            
+            return $output;
+        }
+        
+        public function save_to_dafts($model_email){
+            $output = false;
+            if ($this->is_loaded){
+                $drafts = $this->get_drafts();
+                if ($drafts && $drafts instanceof \frameworks\adapt\model && $drafts->table_name == 'email_folder'){
+                    $model_email->email_folder_id = $drafts->email_folder_id;
+                    $model_email->template = 'No';
+                    $model_email->draft = 'Yes';
+                    $model_email->sent = 'No';
+                    $model_email->queued_to_send = 'No';
+                    $model_email->received = 'No';
+                    $model_email->seen = 'No';
+                    $model_email->flagged = 'No';
+                    $model_email->answered = 'No';
+                    $output = $model_email->save();
+                }else{
+                    $this->error("Unable to find the drafts folder");
+                }
+            }else{
+                $this->error("Unable to save email to drafts folder, email account not loaded.");
+            }
+            
+            return $output;
+        }
+        
+        public function save_to_outbox($model_email){
+            $output = false;
+            if ($this->is_loaded){
+                $outbox = $this->get_outbox();
+                if ($outbox && $outbox instanceof \frameworks\adapt\model && $outbox->table_name == 'email_folder'){
+                    $model_email->email_folder_id = $outbox->email_folder_id;
+                    $model_email->template = 'No';
+                    $model_email->draft = 'No';
+                    $model_email->sent = 'No';
+                    $model_email->queued_to_send = 'No';
+                    $model_email->received = 'No';
+                    $model_email->seen = 'No';
+                    $model_email->flagged = 'No';
+                    $model_email->answered = 'No';
+                    $output = $model_email->save();
+                }else{
+                    $this->error("Unable to find the outbox folder");
+                }
+            }else{
+                $this->error("Unable to save email to the outbox, email account not loaded.");
+            }
+            
+            return $output;
         }
         
     }

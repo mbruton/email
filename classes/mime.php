@@ -108,6 +108,10 @@ namespace extensions\email{
             
             return $output;
         }
+        
+        public function __toString(){
+            return $this->render();
+        }
     }
 }
 

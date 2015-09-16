@@ -112,7 +112,7 @@ namespace extensions\email{
                     }
                     
                     if (!is_null($connection)){
-                        $this->send_via_connection($connection, $domain);
+                        return $this->send_via_connection($connection, $domain);
                     }else{
                         $this->error("Unable to send mail to '{$domain}' - no valid mail host could be found.");
                         $valid = false;
@@ -158,7 +158,7 @@ namespace extensions\email{
                 /*
                  * Set the sender
                  */
-                if ($this->request($connection, "MAIL FROM: <{$this->_from}>", $code, $connection)){
+                if ($this->send_request($connection, "MAIL FROM: <{$this->_from}>", $code, $response)){
                     if ($code == "250"){
                         
                         /*
@@ -166,7 +166,7 @@ namespace extensions\email{
                          */
                         
                         foreach($recipients as $email){
-                            if ($this->request($connection, "RCPT TO: <{$mail}>", $code, $response)){
+                            if ($this->send_request($connection, "RCPT TO: <{$email}>", $code, $response)){
                                 if (!in_array($code, array("250", "251"))){
                                     $this->error("The smtp server rejected the recipient '{$email}' with the error {$code}: {$response}");
                                     $output = false;
@@ -178,11 +178,11 @@ namespace extensions\email{
                            /*
                             * Only send the message if we are error free
                             */
-                            if ($this->request($connection, "DATA", $code, $response)){
+                            if ($this->send_request($connection, "DATA", $code, $response)){
                                 
                                 if ($code == "354"){
                                     /* The smtp server is allowing us to send the message */
-                                    if ($this->request($connection, $this->_data . "\r\n.", $code, $response)){
+                                    if ($this->send_request($connection, $this->_data . "\r\n.", $code, $response)){
                                         if ($code != 250){
                                             $this->error("The smtp server rejected the message with the error {$code}: {$response}");
                                             $output = false;
@@ -206,7 +206,7 @@ namespace extensions\email{
             }
             
             /* Close the connection */
-            $this->request($connection, "QUIT", $code, $response);
+            $this->send_request($connection, "QUIT", $code, $response);
             fclose($connection);
             
             return $output;
@@ -224,13 +224,16 @@ namespace extensions\email{
             if ($connection){
                 $code = null;
                 $response = null;
-                $this->parse_response(fgets($connection), $code, $response);
+                $this->parse_response(fgets($connection, 4096), $code, $response);
                 
                 if ($code == '220'){
                     if (preg_match("/esmtp/i", $response)){
                         /* ESMTP Host so lets handshake with EHLO */
                         
-                        if ($this->request($connection, "EHLO" . is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname, $code, $response)){
+                        $request = "EHLO ";
+                        $request .= is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname;
+                        
+                        if ($this->send_request($connection,$request, $code, $response)){
                             if ($code != "250"){
                                 /* Unexpected response */
                                 $this->error("{$code}: {$error}");
@@ -246,7 +249,11 @@ namespace extensions\email{
                         
                     }else{
                         /* Old school smtp server */
-                        if ($this->request($connection, "HELO" . is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname, $code, $response)){
+                        
+                        $request = "HELO ";
+                        $request .= is_null($this->_local_hostname) ? "localhost" : $this->_local_hostname;
+                        
+                        if ($this->send_request($connection, $request, $code, $response)){
                             if ($code != "250"){
                                 /* Unexpected response */
                                 $this->error("{$code}: {$error}");
@@ -265,7 +272,7 @@ namespace extensions\email{
                      * Do we need to enable TLS?
                      */
                     if ($security == self::TLS){
-                        if ($this->request($connection, "STARTTLS", $code, $response)){
+                        if ($this->send_request($connection, "STARTTLS", $code, $response)){
                             
                             /* Lets enable TLS */
                             if (false == stream_socket_enable_crypto($connection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)){
@@ -287,9 +294,9 @@ namespace extensions\email{
                      * Do we need to login?
                      */
                     if ($username && $password){
-                        if ($this->request($connection, "AUTH LOGIN", $code, $response)){
-                            if ($this->request($connection, base64_encode($this->username), $code, $response)){
-                                if ($this->request(base64_encode($this->password), $code, $response)){
+                        if ($this->send_request($connection, "AUTH LOGIN", $code, $response)){
+                            if ($this->send_request($connection, base64_encode($username), $code, $response)){
+                                if ($this->send_request($connection, base64_encode($password), $code, $response)){
                                     if ($code != "235"){
                                         $this->error("Unable to authenticate againist {$host} - Server responded with {$code}: {$response}");
                                         fclose($connection);
@@ -319,6 +326,8 @@ namespace extensions\email{
         }
         
         protected function parse_response($response, &$code, &$data){
+            print new html_pre("RESPONSE: {$response}");
+            
             if (strlen($response) >= 3){
                 $code = substr($response, 0, 3);
                 if (strlen($response) > 3){
@@ -327,14 +336,26 @@ namespace extensions\email{
             }
         }
         
-        protected function request($connection, $command, &$response_code, &$response_description){
+        protected function send_request($connection, $command, &$response_code, &$response_description){
+            print new html_pre("SENDING: {$command}");
             if ($connection){
                 $response_code = "";
                 $response_description = "-";
                 fputs($connection, $command . "\r\n");
                 
-                while (substr($response_description, 0, 1) == "-"){ //To work around a PHP bug on debian
-                    $this->parse_response(fgets($connection), $response_code, $response_description);
+                //while (($response = fgets($connection)) !== false){
+                //    ob_flush();
+                //    $this->parse_response($response, $response_code, $response_description);
+                //}
+                
+                //while (!feof($connection)){
+                //    $this->parse_response(fgets($connection), $response_code, $response_description);
+                //}
+                
+                if ($command != 'QUIT'){
+                    while (substr($response_description, 0, 1) == "-"){ //To work around a PHP bug on debian
+                        $this->parse_response(fgets($connection), $response_code, $response_description);
+                    }
                 }
                 
                 return true;

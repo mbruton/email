@@ -275,12 +275,184 @@ namespace extensions\email{
                     
                     if ($email_account->is_loaded) break;
                 }
+                
+                /* While we are in this loop we may as well do the variable swap out */
+                if ($this->_variables && is_array($this->_variables)){
+                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part' && in_array($child->content_encoding, array('quoted-printable'))){
+                        foreach($this->_variables as $key => $value){
+                            $child->content = quoted_printable_encode(preg_replace("/\{\{" . $key . "\}\}/", $value, quoted_printable_decode($child->content)));
+                        }
+                    }
+                }
             }
             
             if (is_null($email_account)){
                 /* We haven't found one so we are going to use the system default (if there is one) */
-                
+                $account = new model_email_account();
+                if ($account->load_default()){
+                    $email_account = $account;
+                }
             }
+            
+            if ($email_account && $email_account instanceof model_email_account){
+                if ($queue){
+                    return $email_account->queue($this);
+                }else{
+                    return $email_account->send($this);
+                }
+            }
+            
+            return false;
+        }
+        
+        public function render(){
+            $raw = "";
+            if ($this->sender_email){
+                if ($this->sender_name){
+                    $raw .= "From: {$this->sender_name} <$this->sender_email>\r\n";
+                }else{
+                    $raw .= "From: $this->sender_email\r\n";
+                }
+            }
+            
+            $to = "";
+            $cc = "";
+            $children = $this->get();
+            foreach($children as $child){
+                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'to' && $child->recipient_email){
+                    if ($to == ""){
+                        if ($child->recipient_name){
+                            $to .= "To: {$child->recipient_name} <{$child->recipient_email}>";
+                        }else{
+                            $to .= "To: {$child->recipient_email}";
+                        }
+                    }else{
+                        if ($child->recipient_name){
+                            $to .= "; {$child->recipient_name} <{$child->recipient_email}>";
+                        }else{
+                            $to .= "; {$child->recipient_email}";
+                        }
+                    }
+                }elseif ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc' && $child->recipient_email){
+                    if ($cc == ""){
+                        if ($child->recipient_name){
+                            $cc .= "Cc: {$child->recipient_name} <{$child->recipient_email}>";
+                        }else{
+                            $cc .= "Cc: {$child->recipient_email}";
+                        }
+                    }else{
+                        if ($child->recipient_name){
+                            $cc .= "; {$child->recipient_name} <{$child->recipient_email}>";
+                        }else{
+                            $cc .= "; {$child->recipient_email}";
+                        }
+                    }
+                }
+            }
+            
+            if ($to != ""){
+                $raw .= $to . "\r\n";
+            }
+            
+            if ($cc != ""){
+                $raw .= $cc . "\r\n";
+            }
+            
+            if ($this->date_sent){
+                $date = new \frameworks\adapt\date($this->date_sent);
+                $raw .= "Date: " . $date->date('r') . "\r\n";
+            }
+            
+            if ($this->subject){
+                $raw .= "Subject: {$this->subject}\r\n";
+            }
+            
+            /* Lets build the body */
+            $printables = array();
+            $non_prinatables = array();
+            
+            foreach($children as $child){
+                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part'){
+                    if (in_array($child->content_encoding, array('quoted-printable'))){
+                        $printables[] = $child;
+                    }else{
+                        $non_prinatables[] = $child;
+                    }
+                }
+            }
+            
+            
+            
+            if (count($printables) && count($non_prinatables)){
+                
+                $body = new mime("multipart/mixed");
+                
+                if (count($printables) > 1){
+                    $alternatives = new mime("multipart/alternative");
+                    foreach($printables as $child){
+                        $alternatives->add(new mime($child->content_type, null, $child->content_encoding));
+                    }
+                    $body->add($alternatives);
+                }else{
+                    $body->add(new mime($printables[0]->content_type, null, $printables[0]->content_encoding));
+                }
+                
+                foreach($non_prinatables as $child){
+                    if ($child->filename){
+                        $body->add(new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename));
+                    }else{
+                        $body->add(new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline'));
+                    }
+                }
+                
+                $raw .= $body->render();
+                
+            }elseif(count($printables)){
+                
+                if (count($printables) > 1){
+                    $body = new mime("multipart/alternative");
+                    foreach($printables as $child){
+                        $body->add(new mime($child->content_type, null, $child->content_encoding));
+                    }
+                    
+                    $raw .= $body->render();
+                    
+                }else{
+                    $body = new mime($printables[0]->content_type, null, $printables[0]->content_encoding);
+                    $raw .= $body->render();
+                }
+                
+            }elseif(count($non_prinatables)){
+                
+                if (count($non_prinatables) > 1){
+                    $body = new mime("multipart/mixed");
+                    foreach($non_printables as $child){
+                        if ($child->filename){
+                            $body->add(new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename));
+                        }else{
+                            $body->add(new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline'));
+                        }
+                    }
+                    
+                    $raw .= $body->render();
+                    
+                }else{
+                    if ($non_prinatables[0]->filename){
+                        $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, null, 'attachment', $non_prinatables[0]->filename);
+                        $raw .= $body->render();
+                    }else{
+                        $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, $non_prinatables[0]->content_id, 'inline');
+                        $raw .= $body->render();    
+                    }
+                    
+                }
+                
+            }else{
+                $raw .= "\r\n";
+            }
+            
+            
+            return $raw;
         }
         
     }
