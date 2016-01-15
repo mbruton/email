@@ -16,6 +16,7 @@ $sql->create_table('email_account')
     ->add('label', 'varchar(64)')
     ->add('description', 'text')
     ->add('priority', 'int', false) //Lowest is considered the default
+    ->add('account_email', 'email_address')
     ->add('imap_hostname', 'varchar(256)')
     ->add('imap_port', 'int', true, '993')
     ->add('imap_username', 'varchar(256)')
@@ -104,7 +105,7 @@ $sql->create_table('email')
     ->add('date_modified', 'timestamp')
     ->add('date_deleted', 'datetime')
     ->primary_key('email_id')
-    ->foreign_key('email_folder_id', 'email_folder', 'email_folder_id')
+    ->foreign_key('email_folder_id', 'email_folder', 'email_folder_id', \frameworks\adapt\sql::ON_DELETE_CASCADE)
     ->execute();
 
 $sql->create_table('email_part')
@@ -139,10 +140,11 @@ $sql->create_table('email_recipient')
 $account = new model_email_account();
 $account->name = 'default';
 $account->label = 'Default';
+//$account->account_email = 'matt@example.com';
 $account->description = 'This is the default account used to send emails.';
 $account->priority = 1;
 $account->save();
-    
+
 
 /* Add a new task for checking email */
 //$task = new \extensions\scheduler\model_task();

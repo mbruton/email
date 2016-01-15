@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent direct access */
     defined('ADAPT_STARTED') or die;
     
-    class email extends \frameworks\adapt\base{
+    class email extends \adapt\base{
         
         protected $email_addresses;
         protected $from;

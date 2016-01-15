@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent Direct Access */
     defined('ADAPT_STARTED') or die;
     
-    class task_check_mail extends \extensions\scheduler\task{
+    class task_check_mail extends \adapt\scheduler\task{
         
         public function task(){
             parent::task();

@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent direct access */
     defined('ADAPT_STARTED') or die;
     
-    class model_email extends \frameworks\adapt\model{
+    class model_email extends \adapt\model{
         
         const EVENT_ON_LOAD_BY_IMAP_MESSAGE_ID = 'model_email.on_load_by_imap_message_id';
         
@@ -47,16 +47,16 @@ namespace extensions\email{
                     /* Do we have a date_deleted field? */
                     if (in_array('date_deleted', $fields)){
                         
-                        $id_condition = new \frameworks\adapt\sql_condition(new \frameworks\adapt\sql('imap_message_id'), '=', $imap_message_id);
-                        $folder_condition = new \frameworks\adapt\sql_condition(new \frameworks\adapt\sql('email_folder_id'), '=', $email_folder_id);
-                        $date_deleted_condition = new \frameworks\adapt\sql_condition(new \frameworks\adapt\sql('date_deleted'), 'is', new \frameworks\adapt\sql('null'));
+                        $id_condition = new \adapt\sql_condition(new \adapt\sql('imap_message_id'), '=', $imap_message_id);
+                        $folder_condition = new \adapt\sql_condition(new \adapt\sql('email_folder_id'), '=', $email_folder_id);
+                        $date_deleted_condition = new \adapt\sql_condition(new \adapt\sql('date_deleted'), 'is', new \adapt\sql('null'));
                         
-                        $sql->where(new \frameworks\adapt\sql_and($id_condition, $folder_condition, $date_deleted_condition));
+                        $sql->where(new \adapt\sql_and($id_condition, $folder_condition, $date_deleted_condition));
                     }else{
                         
-                        $id_condition = new \frameworks\adapt\sql_condition(new \frameworks\adapt\sql('imap_message_id'), '=', $imap_message_id);
-                        $folder_condition = new \frameworks\adapt\sql_condition(new \frameworks\adapt\sql('email_folder_id'), '=', $email_folder_id);
-                        $sql->where(new \frameworks\adapt\sql_and($id_condition, $folder_condition));
+                        $id_condition = new \adapt\sql_condition(new \adapt\sql('imap_message_id'), '=', $imap_message_id);
+                        $folder_condition = new \adapt\sql_condition(new \adapt\sql('email_folder_id'), '=', $email_folder_id);
+                        $sql->where(new \adapt\sql_and($id_condition, $folder_condition));
                     }
                     print new html_pre($sql);
                     /* Get the results */
@@ -87,7 +87,7 @@ namespace extensions\email{
                 $children = $this->get();
                 $output = array();
                 foreach($children as $child){
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'to'){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'to'){
                         $output[] = $child;
                     }
                 }
@@ -110,7 +110,7 @@ namespace extensions\email{
                 $children = $this->get();
                 $output = array();
                 foreach($children as $child){
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc'){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc'){
                         $output[] = $child;
                     }
                 }
@@ -133,7 +133,7 @@ namespace extensions\email{
                 $children = $this->get();
                 $output = array();
                 foreach($children as $child){
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'bcc'){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'bcc'){
                         $output[] = $child;
                     }
                 }
@@ -179,7 +179,7 @@ namespace extensions\email{
                 $children = $this->get();
                 foreach($children as $child){
                     $output = array();
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part' && $child->content_type == $content_type){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_part' && $child->content_type == $content_type){
                         $output[] = $child;
                     }
                     return $output;
@@ -200,7 +200,7 @@ namespace extensions\email{
                 $children = $this->get();
                 foreach($children as $child){
                     $output = array();
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part' && $child->content_encoding == "base64" && is_null($child->content_id)){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_part' && $child->content_encoding == "base64" && is_null($child->content_id)){
                         $output[] = $child;
                     }
                     return $output;
@@ -230,7 +230,7 @@ namespace extensions\email{
                 $children = $this->get();
                 foreach($children as $child){
                     $output = array();
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part' && $child->content_encoding == "base64" && !is_null($child->content_id)){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_part' && $child->content_encoding == "base64" && !is_null($child->content_id)){
                         $output[] = $child;
                     }
                     return $output;
@@ -270,7 +270,7 @@ namespace extensions\email{
             
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder'){
                     $email_account = new model_email_account($child->email_account_id);
                     
                     if ($email_account->is_loaded) break;
@@ -278,7 +278,7 @@ namespace extensions\email{
                 
                 /* While we are in this loop we may as well do the variable swap out */
                 if ($this->_variables && is_array($this->_variables)){
-                    if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part' && in_array($child->content_encoding, array('quoted-printable'))){
+                    if ($child instanceof \adapt\model && $child->table_name == 'email_part' && in_array($child->content_encoding, array('quoted-printable'))){
                         foreach($this->_variables as $key => $value){
                             $child->content = quoted_printable_encode(preg_replace("/\{\{" . $key . "\}\}/", $value, quoted_printable_decode($child->content)));
                         }
@@ -319,7 +319,7 @@ namespace extensions\email{
             $cc = "";
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'to' && $child->recipient_email){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'to' && $child->recipient_email){
                     if ($to == ""){
                         if ($child->recipient_name){
                             $to .= "To: {$child->recipient_name} <{$child->recipient_email}>";
@@ -333,7 +333,7 @@ namespace extensions\email{
                             $to .= "; {$child->recipient_email}";
                         }
                     }
-                }elseif ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc' && $child->recipient_email){
+                }elseif ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc' && $child->recipient_email){
                     if ($cc == ""){
                         if ($child->recipient_name){
                             $cc .= "Cc: {$child->recipient_name} <{$child->recipient_email}>";
@@ -359,7 +359,7 @@ namespace extensions\email{
             }
             
             if ($this->date_sent){
-                $date = new \frameworks\adapt\date($this->date_sent);
+                $date = new \adapt\date($this->date_sent);
                 $raw .= "Date: " . $date->date('r') . "\r\n";
             }
             
@@ -372,7 +372,7 @@ namespace extensions\email{
             $non_prinatables = array();
             
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_part'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_part'){
                     if (in_array($child->content_encoding, array('quoted-printable'))){
                         $printables[] = $child;
                     }else{

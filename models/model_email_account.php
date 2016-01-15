@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent direct access */
     defined('ADAPT_STARTED') or die;
     
-    class model_email_account extends \frameworks\adapt\model{
+    class model_email_account extends \adapt\model{
         
         public function __construct($id = null, $data_source = null){
             parent::__construct('email_account', $id, $data_source);
@@ -27,7 +27,7 @@ namespace extensions\email{
                 ->select('*')
                 ->from('email_account')
                 ->where(
-                    new \frameworks\adapt\sql_condition(
+                    new \adapt\sql_condition(
                         $this->data_source->sql('date_deleted'),
                         'is',
                         $this->data_source->sql('null')
@@ -39,8 +39,10 @@ namespace extensions\email{
                 ->results();
             
             if (is_array($result) && count($result) == 1){
-                return $this->load_by_data($result);
+                return $this->load_by_data($result[0]);
             }
+            
+            return false;
         }
         
         public function new_email(){
@@ -52,25 +54,25 @@ namespace extensions\email{
         
         public function new_email_from_template($template_name){
             $templates = $this->get_templates();
-            if ($templates && $templates instanceof \frameworks\adapt\model && $templates->table_name == 'email_folder'){
+            if ($templates && $templates instanceof \adapt\model && $templates->table_name == 'email_folder'){
                 $result = $this
                     ->data_source
                     ->sql
                     ->select('*')
                     ->from('email')
                     ->where(
-                        new \frameworks\adapt\sql_and(
-                            new \frameworks\adapt\sql_condition(
+                        new \adapt\sql_and(
+                            new \adapt\sql_condition(
                                 $this->data_source->sql('date_deleted'),
                                 'is',
                                 $this->data_source->sql('null')
                             ),
-                            new \frameworks\adapt\sql_condition(
+                            new \adapt\sql_condition(
                                 $this->data_source->sql('email_folder_id'),
                                 '=',
                                 $templates->email_folder_id
                             ),
-                            new \frameworks\adapt\sql_condition(
+                            new \adapt\sql_condition(
                                 $this->data_source->sql('name'),
                                 '=',
                                 $template_name
@@ -88,7 +90,7 @@ namespace extensions\email{
                         /* Remove the folder */
                         for($i = 0; $i < $email->count(); $i++){
                             $child = $email->get($i);
-                            if ($child && $child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder'){
+                            if ($child && $child instanceof \adapt\model && $child->table_name == 'email_folder'){
                                 $email->remove($i);
                             }
                         }
@@ -189,7 +191,7 @@ namespace extensions\email{
                         
                         $found = false;
                         foreach($children as $child){
-                            if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder'){
+                            if ($child instanceof \adapt\model && $child->table_name == 'email_folder'){
                                 if ($child->imap_name == $folder){
                                     $found = true;
                                 }
@@ -287,7 +289,7 @@ namespace extensions\email{
                         /* Get the message ID's */
                         $search = null;
                         if (!is_null($folder->date_synced)){
-                            $date = new \frameworks\adapt\date($folder->date_synced);
+                            $date = new \adapt\date($folder->date_synced);
                             $search = "SINCE " . $date->date('d-M-Y');
                         }
                         
@@ -307,7 +309,7 @@ namespace extensions\email{
                                 print new html_pre("Updating existing record");
                                 
                                 /* Create new */
-                                $date = new \frameworks\adapt\date();
+                                $date = new \adapt\date();
                                 $date->set_date($header->date, "D, d M Y H:i:s O");
                                 
                                 $email->email_folder_id = $folder->email_folder_id;
@@ -340,7 +342,7 @@ namespace extensions\email{
                                 $email->errors(true);
                                 
                                 /* Create new */
-                                $date = new \frameworks\adapt\date();
+                                $date = new \adapt\date();
                                 $date->set_date($header->date, "D, d M Y H:i:s O");
                                 
                                 $email->email_folder_id = $folder->email_folder_id;
@@ -423,7 +425,7 @@ namespace extensions\email{
         }
         
         public function get_imap_path($model_email_folder){
-            if ($model_email_folder instanceof \frameworks\adapt\model && $model_email_folder->table_name == 'email_folder'){
+            if ($model_email_folder instanceof \adapt\model && $model_email_folder->table_name == 'email_folder'){
                 $name = $model_email_folder->imap_name;
                 if (is_null($model_email_folder->parent_email_folder_id)){
                     return $name;
@@ -444,7 +446,7 @@ namespace extensions\email{
             $children = $this->get();
             
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->email_folder_id == $id){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->email_folder_id == $id){
                     return $child;
                 }
             }
@@ -487,7 +489,7 @@ namespace extensions\email{
             
             $found = false;
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder'){
                     if ((is_null($parent_id) && is_null($child->parent_email_folder_id) && $child->imap_name == $base_folder) || ($parent_id == $child->parent_email_folder_id && $child->imap_name == $base_folder)){
                         
                         $found = true;
@@ -520,7 +522,7 @@ namespace extensions\email{
         public function get_inbox(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Inbox'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Inbox'){
                     return $child;
                 }
             }
@@ -531,7 +533,7 @@ namespace extensions\email{
         public function get_outbox(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Outbox'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Outbox'){
                     return $child;
                 }
             }
@@ -542,7 +544,7 @@ namespace extensions\email{
         public function get_sent_items(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Sent items'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Sent items'){
                     return $child;
                 }
             }
@@ -553,7 +555,7 @@ namespace extensions\email{
         public function get_trash(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Trash'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Trash'){
                     return $child;
                 }
             }
@@ -564,7 +566,7 @@ namespace extensions\email{
         public function get_drafts(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Drafts'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Drafts'){
                     return $child;
                 }
             }
@@ -575,7 +577,7 @@ namespace extensions\email{
         public function get_templates(){
             $children = $this->get();
             foreach($children as $child){
-                if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_folder' && $child->type == 'Templates'){
+                if ($child instanceof \adapt\model && $child->table_name == 'email_folder' && $child->type == 'Templates'){
                     return $child;
                 }
             }
@@ -608,7 +610,7 @@ namespace extensions\email{
                     $children = $model_email->get();
                     
                     foreach($children as $child){
-                        if ($child instanceof \frameworks\adapt\model && $child->table_name == 'email_recipient'){
+                        if ($child instanceof \adapt\model && $child->table_name == 'email_recipient'){
                             $smtp->to($child->recipient_email);
                         }
                     }
@@ -657,7 +659,7 @@ namespace extensions\email{
             $output = false;
             if ($this->is_loaded){
                 $sent_items = $this->get_sent_items();
-                if ($sent_items && $sent_items instanceof \frameworks\adapt\model && $sent_items->table_name == 'email_folder'){
+                if ($sent_items && $sent_items instanceof \adapt\model && $sent_items->table_name == 'email_folder'){
                     $model_email->email_folder_id = $sent_items->email_folder_id;
                     $model_email->template = 'No';
                     $model_email->draft = 'No';
@@ -682,7 +684,7 @@ namespace extensions\email{
             $output = false;
             if ($this->is_loaded){
                 $drafts = $this->get_drafts();
-                if ($drafts && $drafts instanceof \frameworks\adapt\model && $drafts->table_name == 'email_folder'){
+                if ($drafts && $drafts instanceof \adapt\model && $drafts->table_name == 'email_folder'){
                     $model_email->email_folder_id = $drafts->email_folder_id;
                     $model_email->template = 'No';
                     $model_email->draft = 'Yes';
@@ -707,7 +709,7 @@ namespace extensions\email{
             $output = false;
             if ($this->is_loaded){
                 $outbox = $this->get_outbox();
-                if ($outbox && $outbox instanceof \frameworks\adapt\model && $outbox->table_name == 'email_folder'){
+                if ($outbox && $outbox instanceof \adapt\model && $outbox->table_name == 'email_folder'){
                     $model_email->email_folder_id = $outbox->email_folder_id;
                     $model_email->template = 'No';
                     $model_email->draft = 'No';
@@ -723,6 +725,34 @@ namespace extensions\email{
                 }
             }else{
                 $this->error("Unable to save email to the outbox, email account not loaded.");
+            }
+            
+            return $output;
+        }
+        
+        public function save_to_templates($model_email){
+            $output = false;
+            if ($this->is_loaded){
+                $templates = $this->get_templates();
+                if ($templates && $templates instanceof \adapt\model && $templates->table_name == 'email_folder'){
+                    $model_email->email_folder_id = $templates->email_folder_id;
+                    $model_email->template = 'Yes';
+                    $model_email->draft = 'No';
+                    $model_email->sent = 'No';
+                    $model_email->queued_to_send = 'No';
+                    $model_email->received = 'No';
+                    $model_email->seen = 'No';
+                    $model_email->flagged = 'No';
+                    $model_email->answered = 'No';
+                    if (is_null($model_email->sender_email)){
+                        $model_email->sender_email = $this->account_email;
+                    }
+                    $output = $model_email->save();
+                }else{
+                    $this->error("Unable to find the template folder");
+                }
+            }else{
+                $this->error("Unable to save email to the template, email account not loaded.");
             }
             
             return $output;

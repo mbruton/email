@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent direct access */
     defined('ADAPT_STARTED') or die;
     
-    class mime extends \frameworks\adapt\base{
+    class mime extends \adapt\base{
         
         protected $children;
         protected $type;
@@ -40,7 +40,7 @@ namespace extensions\email{
         public function add($data){
             if (is_array($data)){
                 $this->children = array_merge($this->children, $data);
-            }elseif($data instanceof \frameworks\adapt\html){
+            }elseif($data instanceof \adapt\html){
                 $this->children[] = $data->render();
             }else{
                 $this->children[] = $data;

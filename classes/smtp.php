@@ -1,11 +1,11 @@
 <?php
 
-namespace extensions\email{
+namespace adapt\email{
     
     /* Prevent direct access */
     defined('ADAPT_STARTED') or die;
 
-    class smtp extends \frameworks\adapt\base{
+    class smtp extends \adapt\base{
         
         const NO_SECURITY = 0;
         const SSL = 1;
