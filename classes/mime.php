@@ -97,7 +97,8 @@ namespace adapt\email{
                         //$output .= chunk_split($child, 76, "\r\n");
                         $output .= $child . "\r\n";
                     }elseif(preg_match("/quoted-printable/i", $this->transfer_encoding)){
-                        $output .= quoted_printable_encode($child);
+                        //$output .= quoted_printable_encode($child);
+                        $output .= $child . "\r\n";
                     }else{
                         $output .= $child . "\r\n";
                     }

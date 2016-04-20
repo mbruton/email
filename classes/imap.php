@@ -43,7 +43,7 @@ namespace adapt\email{
         public function search($mailbox = "INBOX", $filter = "ALL"){
             //print new html_pre($mailbox);
             if (imap_reopen($this->_mailstore, $this->_ref . $mailbox)){
-                $emails = imap_search($this->_mailstore, $filter/*, SE_UID*/);
+                $emails = imap_search($this->_mailstore, $filter, SE_UID);
                 //print new html_pre(print_r($emails, true));
                 return $emails;
             }else{

@@ -10,6 +10,14 @@ namespace adapt\email{
         public function task(){
             parent::task();
             
+            $output = "";
+            
+            $this->_log->label = "Checking mail";
+            $this->_log->save();
+            
+            $mailbox = new model_email_account(2);
+            $mailbox->fetch();
+            
             /* Children should override this with the code they wish to run */
             return "Called task_check_mail";
         }

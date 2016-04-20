@@ -41,24 +41,24 @@ namespace adapt\email{
                 if (in_array('imap_message_id', $fields)){
                     $sql = $this->data_source->sql;
                     
-                    $sql->select(new \frameworks\adapt\sql('*'))
+                    $sql->select('*')
                         ->from($this->table_name);
                     
                     /* Do we have a date_deleted field? */
                     if (in_array('date_deleted', $fields)){
                         
-                        $id_condition = new \adapt\sql_condition(new \adapt\sql('imap_message_id'), '=', $imap_message_id);
-                        $folder_condition = new \adapt\sql_condition(new \adapt\sql('email_folder_id'), '=', $email_folder_id);
-                        $date_deleted_condition = new \adapt\sql_condition(new \adapt\sql('date_deleted'), 'is', new \adapt\sql('null'));
+                        $id_condition = new sql_cond('imap_message_id', sql::EQUALS, $imap_message_id);
+                        $folder_condition = new sql_cond('email_folder_id', sql::EQUALS, $email_folder_id);
+                        $date_deleted_condition = new sql_cond('date_deleted', sql::IS, new sql_null());
                         
-                        $sql->where(new \adapt\sql_and($id_condition, $folder_condition, $date_deleted_condition));
+                        $sql->where(new sql_and($id_condition, $folder_condition, $date_deleted_condition));
                     }else{
                         
-                        $id_condition = new \adapt\sql_condition(new \adapt\sql('imap_message_id'), '=', $imap_message_id);
-                        $folder_condition = new \adapt\sql_condition(new \adapt\sql('email_folder_id'), '=', $email_folder_id);
-                        $sql->where(new \adapt\sql_and($id_condition, $folder_condition));
+                        $id_condition = new sql_cond('imap_message_id', sql::EQUALS, $imap_message_id);
+                        $folder_condition = new sql_cond('email_folder_id', sql::EQUALS, $email_folder_id);
+                        $sql->where(new sql_and($id_condition, $folder_condition));
                     }
-                    print new html_pre($sql);
+                    //print new html_pre($sql);
                     /* Get the results */
                     $results = $sql->execute()->results();
                     print new html_pre(print_r($results, true));
@@ -273,15 +273,20 @@ namespace adapt\email{
                 if ($child instanceof \adapt\model && $child->table_name == 'email_folder'){
                     $email_account = new model_email_account($child->email_account_id);
                     
-                    if ($email_account->is_loaded) break;
+                    if ($email_account->is_loaded){
+                        break;
+                    }
                 }
                 
                 /* While we are in this loop we may as well do the variable swap out */
                 if ($this->_variables && is_array($this->_variables)){
                     if ($child instanceof \adapt\model && $child->table_name == 'email_part' && in_array($child->content_encoding, array('quoted-printable'))){
+                        $content = quoted_printable_decode($child->content);
                         foreach($this->_variables as $key => $value){
-                            $child->content = quoted_printable_encode(preg_replace("/\{\{" . $key . "\}\}/", $value, quoted_printable_decode($child->content)));
+                            //$child->content = quoted_printable_encode(preg_replace("/\{\{" . $key . "\}\}/", $value, quoted_printable_decode($child->content)));
+                            $content = str_replace("{{" . $key . "}}", $value, $content);
                         }
+                        $child->content = quoted_printable_encode($content);
                     }
                 }
             }
@@ -361,6 +366,9 @@ namespace adapt\email{
             if ($this->date_sent){
                 $date = new \adapt\date($this->date_sent);
                 $raw .= "Date: " . $date->date('r') . "\r\n";
+            }else{
+                $date = new \adapt\date();
+                $raw .= "Date: " . $date->date('r') . "\r\n";
             }
             
             if ($this->subject){
@@ -390,18 +398,26 @@ namespace adapt\email{
                 if (count($printables) > 1){
                     $alternatives = new mime("multipart/alternative");
                     foreach($printables as $child){
-                        $alternatives->add(new mime($child->content_type, null, $child->content_encoding));
+                        $mime = new mime($child->content_type, null, $child->content_encoding);
+                        $mime->add($child->content);
+                        $alternatives->add($mime);
                     }
                     $body->add($alternatives);
                 }else{
-                    $body->add(new mime($printables[0]->content_type, null, $printables[0]->content_encoding));
+                    $mime = new mime($printables[0]->content_type, null, $printables[0]->content_encoding);
+                    $mime->add($printables[0]->content);
+                    $body->add($mime);
                 }
                 
                 foreach($non_prinatables as $child){
                     if ($child->filename){
-                        $body->add(new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename));
+                        $mime = new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename);
+                        $mime->add($child->content);
+                        $body->add($mime);
                     }else{
-                        $body->add(new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline'));
+                        $mime = new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline');
+                        $mime->add($child->content);
+                        $body->add($mime);
                     }
                 }
                 
@@ -412,13 +428,16 @@ namespace adapt\email{
                 if (count($printables) > 1){
                     $body = new mime("multipart/alternative");
                     foreach($printables as $child){
-                        $body->add(new mime($child->content_type, null, $child->content_encoding));
+                        $mime = new mime($child->content_type, null, $child->content_encoding);
+                        $mime->add($child->content);
+                        $body->add($mime);
                     }
                     
                     $raw .= $body->render();
                     
                 }else{
                     $body = new mime($printables[0]->content_type, null, $printables[0]->content_encoding);
+                    $body->add($printables[0]->content);
                     $raw .= $body->render();
                 }
                 
@@ -428,9 +447,13 @@ namespace adapt\email{
                     $body = new mime("multipart/mixed");
                     foreach($non_printables as $child){
                         if ($child->filename){
-                            $body->add(new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename));
+                            $mime = new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename);
+                            $mime->add($child->content);
+                            $body->add($mime);
                         }else{
-                            $body->add(new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline'));
+                            $mime = new mime($child->content_type, null, $child->content_encoding, $this->content_id, 'inline');
+                            $mime->add($child->content);
+                            $body->add($mime);
                         }
                     }
                     
@@ -439,9 +462,11 @@ namespace adapt\email{
                 }else{
                     if ($non_prinatables[0]->filename){
                         $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, null, 'attachment', $non_prinatables[0]->filename);
+                        $body->add($non_prinatables[0]->content);
                         $raw .= $body->render();
                     }else{
                         $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, $non_prinatables[0]->content_id, 'inline');
+                        $body->add($non_prinatables[0]->content);
                         $raw .= $body->render();    
                     }
                     
@@ -450,7 +475,6 @@ namespace adapt\email{
             }else{
                 $raw .= "\r\n";
             }
-            
             
             return $raw;
         }
