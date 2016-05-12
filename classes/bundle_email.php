@@ -75,15 +75,11 @@ namespace adapt\email{
                                     break;
                                 case "part":
                                     
-                                    $part = $template_child->get(0);
+                                    $part = $template_child->get(0)->get(0);
                                     $type = $template_child->attr('content-type');
                                     $encoding = $template_child->attr('content-encoding');
                                     $content_id = $template_child->attr('content-id');
                                     $filename = $template_child->attr('filename');
-                                    
-                                    if ($type == "text/html" && $encoding == "xml"){
-                                        $part = $part->render();
-                                    }
                                     
                                     $template['parts'][] = array(
                                         'content_type' => $type,

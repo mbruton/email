@@ -748,6 +748,9 @@ namespace adapt\email{
                 
                 $email = $model_email->render();
                 
+                /* Handle dot stuffing */
+                $email = preg_replace("/^\./m", "..", $email);
+                
                 if ($email && $email != ""){
                     
                     /* Create a new SMTP instance */

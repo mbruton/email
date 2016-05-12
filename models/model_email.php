@@ -268,6 +268,21 @@ namespace adapt\email{
             /* We need to find the folder we are in so we can find the email_account */
             $email_account = null;
             
+            /* Ensure variables are an array */
+            if (!is_array($this->_variables)){
+                $this->_variables = array();
+            }
+            
+            /* Add settings to variables */
+            $settings = $this->get_settings();
+            foreach($settings as $name => $value){
+                if (is_string($value) || is_numeric($value)){
+                    $key = "setting[{$name}]";
+                    $this->_variables[$key] = $value;
+                }
+            }
+            
+            
             $children = $this->get();
             foreach($children as $child){
                 if ($child instanceof \adapt\model && $child->table_name == 'email_folder'){
@@ -286,7 +301,13 @@ namespace adapt\email{
                             //$child->content = quoted_printable_encode(preg_replace("/\{\{" . $key . "\}\}/", $value, quoted_printable_decode($child->content)));
                             $content = str_replace("{{" . $key . "}}", $value, $content);
                         }
+                        
+                        /* Remove any empty variables */
+                        $content = preg_replace("/\{\{[^}]+\}\}/", "", $content);
                         $child->content = quoted_printable_encode($content);
+                        
+                        ///* Dot stuffing, fix the soon to be missing '.' */
+                        //$child->content = preg_replace("/^\./m", "..", $child->content);
                     }
                 }
             }
