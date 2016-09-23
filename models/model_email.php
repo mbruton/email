@@ -61,7 +61,7 @@ namespace adapt\email{
                     //print new html_pre($sql);
                     /* Get the results */
                     $results = $sql->execute()->results();
-                    print new html_pre(print_r($results, true));
+                    //print new html_pre(print_r($results, true));
                     
                     if (count($results) == 1){
                         $this->trigger(self::EVENT_ON_LOAD_BY_IMAP_MESSAGE_ID);
