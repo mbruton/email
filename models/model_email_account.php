@@ -227,7 +227,8 @@ namespace adapt\email{
          * Override delete to cascade to all folders and emails
          */
         public function delete(){
-            //TODO:
+            // TODO: make work more better
+            parent::delete();
         }
         
         /*
