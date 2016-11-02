@@ -177,6 +177,43 @@ namespace adapt\email{
             return null;
         }
         
+        /**
+         * Returns a list of templates on the account
+         */
+        public function list_templates(){
+            $template_names = [];
+            $templates = $this->get_templates();
+            if ($templates && $templates instanceof \adapt\model && $templates->table_name == 'email_folder'){
+                
+                $sql = $this
+                    ->data_source
+                    ->sql
+                    ->select('name')
+                    ->from('email')
+                    ->where(
+                        new sql_and(
+                            new sql_cond(
+                                'date_deleted',
+                                sql::IS,
+                                new sql_null()
+                            ),
+                            new sql_cond(
+                                'email_folder_id',
+                                sql::EQUALS,
+                                sql::q($templates->email_folder_id)
+                            )
+                        )
+                    );
+                
+                $results = $sql
+                    ->execute()
+                    ->results();
+                
+                foreach($results as $result) $template_names[] = $result['name'];
+            }
+            
+            return $template_names;
+        }
         
         /*
          * Override save to create new mail folders
