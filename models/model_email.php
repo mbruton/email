@@ -282,6 +282,12 @@ namespace adapt\email{
                 }
             }
             
+            /* Set the variables in the subject */
+            foreach($this->_variables as $key => $value){
+                $this->subject = str_replace("{{" . $key . "}}", $value, $this->subject);
+            }
+            
+            $this->subject = preg_replace("/\{\{[^}]+\}\}/", "", $this->subject);
             
             $children = $this->get();
             foreach($children as $child){
