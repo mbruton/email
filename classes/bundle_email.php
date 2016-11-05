@@ -75,7 +75,13 @@ namespace adapt\email{
                                     break;
                                 case "part":
                                     
-                                    $part = $template_child->get(0)->get(0);
+                                    $get_from_file = $template_child->attr('get-from-file');
+                                    
+                                    if ($get_from_file && file_exists(ADAPT_PATH . $bundle->name . "/" . $bundle->name . "-" . $bundle->version . "/" . $get_from_file)){
+                                        $part = file_get_contents(ADAPT_PATH . $bundle->name . "/" . $bundle->name . "-" . $bundle->version . "/" . $get_from_file);
+                                    } else {
+                                        $part = $template_child->get(0)->get(0);
+                                    }
                                     $type = $template_child->attr('content-type');
                                     $encoding = $template_child->attr('content-encoding');
                                     $content_id = $template_child->attr('content-id');
