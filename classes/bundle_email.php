@@ -95,7 +95,7 @@ namespace adapt\email{
                                         'filename' => $filename
                                     );
                                     
-                                    print "<pre>PARTS: " . print_r($template['parts'], true) . "</pre>";
+                                    //print "<pre>PARTS: " . print_r($template['parts'], true) . "</pre>";
                                     break;
                                 case "from":
                                     $template['sender_email'] = $template_child->get(0);
