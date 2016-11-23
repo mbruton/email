@@ -218,38 +218,38 @@ namespace adapt\email{
         /*
          * Override save to create new mail folders
          */
-        public function save(){
-            if (!$this->is_loaded){
+        public function save($override = false){
+            if (!$this->is_loaded && !$override){
                 /* Inbox */
                 $folder = new model_email_folder();
                 $folder->type = 'Inbox';
                 $folder->label = 'Inbox';
                 $this->add($folder);
-                
+
                 /* Outbox */
                 $folder = new model_email_folder();
                 $folder->type = 'Outbox';
                 $folder->label = 'Outbox';
                 $this->add($folder);
-                
+
                 /* Drafts */
                 $folder = new model_email_folder();
                 $folder->type = 'Drafts';
                 $folder->label = 'Drafts';
                 $this->add($folder);
-                
+
                 /* Sent items */
                 $folder = new model_email_folder();
                 $folder->type = 'Sent items';
                 $folder->label = 'Sent items';
                 $this->add($folder);
-                
+
                 /* Trash */
                 $folder = new model_email_folder();
                 $folder->type = 'Trash';
                 $folder->label = 'Trash';
                 $this->add($folder);
-                
+
                 /* Templates */
                 $folder = new model_email_folder();
                 $folder->type = 'Templates';
