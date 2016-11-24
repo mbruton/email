@@ -218,8 +218,8 @@ namespace adapt\email{
         /*
          * Override save to create new mail folders
          */
-        public function save($override = false){
-            if (!$this->is_loaded && !$override){
+        public function save($create_folders_if_needed = true){
+            if (!$this->is_loaded && $create_folders_if_needed){
                 /* Inbox */
                 $folder = new model_email_folder();
                 $folder->type = 'Inbox';
