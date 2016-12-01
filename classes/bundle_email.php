@@ -74,7 +74,7 @@ namespace adapt\email{
                                     $template['subject'] = $template_child->get(0);
                                     break;
                                 case "part":
-                                    
+
                                     $get_from_file = $template_child->attr('get-from-file');
                                     
                                     if ($get_from_file){
@@ -84,8 +84,6 @@ namespace adapt\email{
                                             $this->error("Unable to find '{$get_from_file}'");
                                             return false;
                                         }
-                                    }else{
-                                        $part = $template_child->get(0)->get(0);
                                     }
                                     
                                     $type = $template_child->attr('content-type');
