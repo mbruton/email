@@ -44,7 +44,7 @@ namespace adapt\email{
                 ->limit(1);
             
             $result = $sql
-                ->execute()
+                ->execute(0)
                 ->results();
             
             if (is_array($result) && count($result) == 1){
