@@ -157,7 +157,7 @@
           <field name="name" index="Yes" index-size="32">
             <label>Name</label>
             <data_type>varchar</data_type>
-            <max_length>64</max_length>
+            <max_length>256</max_length>
             <description>This is used by templates and will be missing on most emails.</description>
           </field>
           <field name="imap_message_id">
