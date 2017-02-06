@@ -215,7 +215,7 @@ namespace adapt\email{
                     $part->filename = $filename;
                     $this->add($part);
                 }else{
-                    $this->error("Unable to attach file with key: {$key}, file was not found.");
+                    $this->error("Unable to attach file with key: {$file_key}, file was not found.");
                     
                 }
                 
@@ -245,7 +245,7 @@ namespace adapt\email{
                     $part->content_id = $content_id;
                     $this->add($part);
                 }else{
-                    $this->error("Unable to embed file with key: {$key}, file was not found.");
+                    $this->error("Unable to embed file with key: {$file_key}, file was not found.");
                     
                 }
                 
@@ -472,7 +472,7 @@ namespace adapt\email{
                 
                 if (count($non_prinatables) > 1){
                     $body = new mime("multipart/mixed");
-                    foreach($non_printables as $child){
+                    foreach($non_prinatables as $child){
                         if ($child->filename){
                             $mime = new mime($child->content_type, null, $child->content_encoding, null, 'attachment', $child->filename);
                             $mime->add($child->content);
@@ -488,11 +488,11 @@ namespace adapt\email{
                     
                 }else{
                     if ($non_prinatables[0]->filename){
-                        $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, null, 'attachment', $non_prinatables[0]->filename);
+                        $body = new mime($non_prinatables[0]->content_type, null, $non_prinatables[0]->content_encoding, null, 'attachment', $non_prinatables[0]->filename);
                         $body->add($non_prinatables[0]->content);
                         $raw .= $body->render();
                     }else{
-                        $body = new mime($non_printables[0]->content_type, null, $non_printables[0]->content_encoding, $non_prinatables[0]->content_id, 'inline');
+                        $body = new mime($non_prinatables[0]->content_type, null, $non_prinatables[0]->content_encoding, $non_prinatables[0]->content_id, 'inline');
                         $body->add($non_prinatables[0]->content);
                         $raw .= $body->render();    
                     }
@@ -510,4 +510,3 @@ namespace adapt\email{
     
 }
 
-?>
