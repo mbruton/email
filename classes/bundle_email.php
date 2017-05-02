@@ -127,8 +127,7 @@ namespace adapt\email{
             if ($bundle instanceof \adapt\bundle){
                 if (is_array($this->_templates[$bundle->name])){
                     $templates = $this->_templates[$bundle->name];
-                    
-                    foreach($templates as $template){                        
+                    foreach($templates as $template){
                         $model_email = new model_email();
                         $account = $this->store('email.account');
                         
