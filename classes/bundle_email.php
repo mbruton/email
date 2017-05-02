@@ -128,11 +128,25 @@ namespace adapt\email{
                 if (is_array($this->_templates[$bundle->name])){
                     $templates = $this->_templates[$bundle->name];
                     
-                    foreach($templates as $template){
+                    foreach($templates as $template){                        
                         $model_email = new model_email();
                         $account = $this->store('email.account');
                         
                         if ($account instanceof model_email_account){
+                            
+                            if ($model_email->load_by_name($template['name'])){
+                                /* Remove parts */
+                                $children = $model_email->get();
+                                foreach($children as $child){
+                                    if ($child instanceof \adapt\model && $child->table_name == "email_part"){
+                                        $child->delete();
+                                    }
+                                }
+                            }else{
+                                /* Clear the load error */
+                                $model_email->errors(true);
+                            }
+                            
                             $model_email->name = $template['name'];
                             $model_email->subject($template['subject']);
                             $model_email->from($template['sender_email'], $template['sender_name']);
@@ -140,8 +154,11 @@ namespace adapt\email{
                                 $model_email->message($part['content_type'], $part['part']);
                             }
                             
-                            $account->save_to_templates($model_email);
-                            
+                            if ($mode_email->is_loaded){
+                                $model_email->save();
+                            }else{
+                                $account->save_to_templates($model_email);
+                            }
                         }
                     }
                 }
