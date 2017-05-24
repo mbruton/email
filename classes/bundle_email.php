@@ -153,7 +153,7 @@ namespace adapt\email{
                                 $model_email->message($part['content_type'], $part['part']);
                             }
                             
-                            if ($mode_email->is_loaded){
+                            if ($model_email->is_loaded){
                                 $model_email->save();
                             }else{
                                 $account->save_to_templates($model_email);
