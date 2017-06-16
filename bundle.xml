@@ -32,7 +32,7 @@
             <label>Email account #</label>
             <data_type>bigint</data_type>
           </field>
-          <field name="name" index="Yes" index-size="32">
+          <field name="name">
             <label>Name</label>
             <data_type>varchar</data_type>
             <max_length>255</max_length>
@@ -156,10 +156,10 @@
             <label>Email folder</label>
             <data_type>bigint</data_type>
           </field>
-          <field name="name" index="Yes" index-size="32">
+          <field name="name">
             <label>Name</label>
             <data_type>varchar</data_type>
-            <max_length>256</max_length>
+            <max_length>255</max_length>
             <description>This is used by templates and will be missing on most emails.</description>
           </field>
           <field name="imap_message_id">
