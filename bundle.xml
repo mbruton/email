@@ -4,7 +4,7 @@
     <label>Adapt Email</label>
     <name>email</name>
     <type>extension</type>
-    <version>1.0.0</version>
+    <version>0.8.0</version>
     <namespace>\adapt\email</namespace>
     <version_status>release</version_status>
     <availability>public</availability>
@@ -14,7 +14,7 @@
     <depends_on>
       <bundle>
         <name>scheduler</name>
-        <version>1.0</version>
+        <version>0.7</version>
       </bundle>
       <bundle>
         <name>advanced_data_types</name>
