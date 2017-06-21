@@ -142,6 +142,7 @@ namespace adapt\email{
                     if ($template->load_by_data($result[0])){
                         
                         $email = $template->copy();
+                        $email->name = guid();
                         
                         /* Remove the folder */
                         for($i = 0; $i < $email->count(); $i++){
