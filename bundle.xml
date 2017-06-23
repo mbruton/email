@@ -1,386 +1,389 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adapt_framework>
-  <bundle>
-    <label>Adapt Email</label>
-    <name>email</name>
-    <type>extension</type>
-    <version>0.8.0</version>
-    <namespace>\adapt\email</namespace>
-    <version_status>release</version_status>
-    <availability>public</availability>
-    <description>Provides SMTP and MIME encoding</description>
-    <copyright>2015 Adapt Framework</copyright>
-    <license>MIT</license>
-    <depends_on>
-      <bundle>
-        <name>scheduler</name>
-        <version>0.7</version>
-      </bundle>
-      <bundle>
-        <name>advanced_data_types</name>
-        <version>1.0</version>
-      </bundle>
-      <bundle>
-        <name>adapt</name>
-        <version>2.0</version>
-      </bundle>
-    </depends_on>
-    <schema>
-      <add>
-        <table name="email_account">
-          <field name="email_account_id" key="primary" auto-increment="Yes">
-            <label>Email account #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="name">
-            <label>Name</label>
-            <data_type>varchar</data_type>
-            <max_length>255</max_length>
-          </field>
-          <field name="label">
-            <label>Label</label>
-            <data_type>varchar</data_type>
-            <max_length>64</max_length>
-          </field>
-          <field name="description">
-            <label>Description</label>
-            <data_type>text</data_type>
-          </field>
-          <field name="priority">
-            <label>Priority</label>
-            <data_type>int</data_type>
-            <nullable>No</nullable>
-          </field>
-          <field name="account_email">
-            <label>Account Email Address</label>
-            <data_type>email_address</data_type>
-          </field>
-          <field name="imap_hostname">
-            <label>IMAP Hostname</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="imap_port">
-            <label>IMAP Port</label>
-            <data_type>int</data_type>
-            <default_value>993</default_value>
-          </field>
-          <field name="imap_username">
-            <label>IMAP Username</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="imap_password">
-            <label>IMAP Password</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="imap_options">
-            <label>IMAP Options</label>
-            <data_type>varchar</data_type>
-            <max_length>128</max_length>
-          </field>
-          <field name="smtp_hostname">
-            <label>SMTP Hostname</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="smtp_port">
-            <label>SMTP Port</label>
-            <data_type>int</data_type>
-            <default_value>22</default_value>
-          </field>
-          <field name="smtp_security">
-            <label>SMTP Security</label>
-            <data_type>enum('None', 'TLS', 'SSL')</data_type>
-            <default_value>None</default_value>
-          </field>
-          <field name="smtp_username">
-            <label>SMTP Username</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="smtp_password">
-            <label>SMTP Password</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="date_synced">
-            <label>Last synced</label>
-            <data_type>datetime</data_type>
-          </field>
-        </table>
-        <table name="email_folder">
-          <field name="email_folder_id" key="primary" auto-increment="Yes">
-            <label>Email folder #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="email_account_id" key="foreign" referenced-table-name="email_account" referenced-field-name="email_account_id">
-            <label>Email account #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="parent_email_folder_id" index="Yes">
-            <label>Parent folder #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="type">
-            <label>Folder type</label>
-            <data_type>enum('Inbox', 'Outbox', 'Sent items', 'Drafts', 'Trash', 'Folder', 'Templates')</data_type>
-            <default_value>Folder</default_value>
-          </field>
-          <field name="imap_name">
-            <label>IMAP Name</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="label">
-            <label>Label</label>
-            <data_type>varchar</data_type>
-            <max_length>128</max_length>
-          </field>
-          <field name="description">
-            <label>Description</label>
-            <data_type>text</data_type>
-          </field>
-          <field name="date_synced">
-            <label>Date last synced</label>
-            <data_type>datetime</data_type>
-          </field>
-        </table>
-        <table name="email">
-          <field name="email_id" key="primary" auto-increment="Yes">
-            <label>Email #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="email_folder_id" key="foreign" referenced-table-name="email_folder" referenced-field-name="email_folder_id">
-            <label>Email folder</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="name">
-            <label>Name</label>
-            <data_type>varchar</data_type>
-            <max_length>255</max_length>
-            <description>This is used by templates and will be missing on most emails.</description>
-          </field>
-          <field name="imap_message_id">
-            <label>IMAP Message ID</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="imap_date">
-            <label>IMAP Date</label>
-            <data_type>datetime</data_type>
-          </field>
-          <field name="imap_message_fetched">
-            <label>Message fetched</label>
-            <description>Has the full message been downloaded from the IMAP server?</description>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="template">
-            <label>Is template?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="draft">
-            <label>Is draft?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="sent">
-            <label>Has been sent?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="queued_to_send">
-            <label>Queued to send?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="received">
-            <label>Has received?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="seen">
-            <label>Has seen?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="answered">
-            <label>Replied to?</label>
-            <data_type>enum('Yes', 'No')</data_type>
-            <default_value>No</default_value>
-          </field>
-          <field name="sender_name">
-            <label>Sender name</label>
-            <data_type>name</data_type>
-          </field>
-          <field name="sender_email">
-            <label>Sender email address</label>
-            <data_type>email_address</data_type>
-          </field>
-          <field name="sender_host">
-            <label>Sender host</label>
-            <data_type>varchar</data_type>
-            <max_length>256</max_length>
-          </field>
-          <field name="subject">
-            <label>Subject</label>
-            <data_type>varchar</data_type>
-            <max_length>512</max_length>
-          </field>
-          <field name="date_sent">
-            <label>Date sent</label>
-            <data_type>datetime</data_type>
-          </field>
-        </table>
-        <table name="email_part">
-          <field name="email_part_id" key="primary" auto-increment="Yes">
-            <label>Email part #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="email_id" key="foreign" referenced-table-name="email" referenced-field-name="email_id">
-            <label>Email #</label>
-            <data_type>bigint</data_type>
-          </field>
-          <field name="content_type">
-            <label>Content type</label>
-            <data_type>varchar</data_type>
-            <max_length>128</max_length>
-            <nullable>No</nullable>
-          </field>
-          <field name="content_encoding">
-            <label>Content encoding</label>
-            <data_type>varchar</data_type>
-            <max_length>128</max_length>
-          </field>
-          <field name="content">
-            <label>Content</label>
-            <data_type>longblob</data_type>
-          </field>
-          <field name="content_id">
-            <label>Content ID</label>
-            <data_type>varchar</data_type>
-            <max_length>128</max_length>
-          </field>
-          <field name="filename">
-            <label>Filename</label>
-            <data_type>varchar</data_type>
-            <max_length>64</max_length>
-          </field>
-        </table>
-        <table name="email_recipient">
-          <field name="email_recipient_id" data-type="bigint" key="primary" auto-increment="Yes" label="Recipient #" />
-          <field name="email_id" data-type="bigint" key="foreign" referenced-field-name="email_id" referenced-table-name="email" label="Email #" />
-          <field name="recipient_type" data-type="enum('to', 'cc', 'bcc')" default-value="to" label="Recipient type" />
-          <field name="recipient_name" data-type="name" label="Name" />
-          <field name="recipient_email" data-type="email_address" label="Email address" />
-        </table>
-        <table name="task">
-          <record>
-            <name>check_mail</name>
-            <status>waiting</status>
-            <label>Check email</label>
-            <description>Checks email accounts for new mail</description>
-            <class_name>\adapt\email\task_check_mail</class_name>
-            <minutes>*/12</minutes>
-            <hours>*</hours>
-            <days_of_month>*</days_of_month>
-            <days_of_week>*</days_of_week>
-            <months>*</months>
-          </record>
-          <record>
-            <name>send_mail</name>
-            <status>waiting</status>
-            <label>Sends email</label>
-            <description>Sends out pending or scheduled emails</description>
-            <class_name>\adapt\email\task_send_mail</class_name>
-            <minutes>*</minutes>
-            <hours>*</hours>
-            <days_of_month>*</days_of_month>
-            <days_of_week>*</days_of_week>
-            <months>*</months>
-          </record>
-        </table>
-      </add>
-    </schema>
-    <settings>
-      <category name="SMTP">
-        <setting>
-          <name>email.smtp_localhost_name</name>
-          <label>The FQD of the localehost sending the email</label>
-          <default_value>localhost</default_value>
-        </setting>
-        <setting>
-          <name>email.smtp_host</name>
-          <label>The host being used to relay the email</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.smtp_port</name>
-          <label>Port number of the SMTP server</label>
-          <default_value>25</default_value>
-        </setting>
-        <setting>
-          <name>email.smtp_security_layer</name>
-          <label>Should the connection be secure?</label>
-          <default_value>NO_SECURITY</default_value>
-          <allowed_values>
-            <value>NO_SECURITY</value>
-            <value>SSL</value>
-            <value>TLS</value>
-          </allowed_values>
-        </setting>
-        <setting>
-          <name>email.smtp_username</name>
-          <label>Username</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.smtp_password</name>
-          <label>Password</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.smtp_sender_email</name>
-          <label>Sender email address</label>
-          <default_value />
-        </setting>
-      </category>
-      <category name="IMAP">
-        <setting>
-          <name>email.imap_host</name>
-          <label>The IMAP host or IP</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.imap_port</name>
-          <label>Port number of the IMAP server</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.imap_username</name>
-          <label>Username</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.imap_password</name>
-          <label>Password</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.imap_options</name>
-          <label>Options</label>
-          <default_value />
-        </setting>
-        <setting>
-          <name>email.imap_folder</name>
-          <label>Folder</label>
-          <default_value>INBOX</default_value>
-        </setting>
-      </category>
-    </settings>
-    
+    <bundle>
+        <label>Adapt Email</label>
+        <name>email</name>
+        <type>extension</type>
+        <version>0.8.0</version>
+        <namespace>\adapt\email</namespace>
+        <version_status>release</version_status>
+        <availability>public</availability>
+        <description>Provides SMTP and MIME encoding</description>
+        <copyright>2017 Matt Bruton</copyright>
+        <license>MIT</license>
+        <vendor>
+            <name>Adapt Framework</name>
+            <website>https://www.adaptframework.com</website>
+        </vendor>
+        <depends_on>
+            <bundle>
+                <name>scheduler</name>
+              <version>0.7</version>
+            </bundle>
+            <bundle>
+                <name>advanced_data_types</name>
+                <version>1.0</version>
+            </bundle>
+            <bundle>
+                <name>adapt</name>
+                <version>2.0</version>
+            </bundle>
+        </depends_on>
+        <schema>
+            <add>
+                <table name="email_account">
+                    <field name="email_account_id" key="primary" auto-increment="Yes">
+                        <label>Email account #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="name">
+                        <label>Name</label>
+                        <data_type>varchar</data_type>
+                        <max_length>255</max_length>
+                    </field>
+                    <field name="label">
+                        <label>Label</label>
+                        <data_type>varchar</data_type>
+                        <max_length>64</max_length>
+                    </field>
+                    <field name="description">
+                        <label>Description</label>
+                        <data_type>text</data_type>
+                    </field>
+                    <field name="priority">
+                        <label>Priority</label>
+                        <data_type>int</data_type>
+                        <nullable>No</nullable>
+                    </field>
+                    <field name="account_email">
+                        <label>Account Email Address</label>
+                        <data_type>email_address</data_type>
+                    </field>
+                    <field name="imap_hostname">
+                        <label>IMAP Hostname</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="imap_port">
+                        <label>IMAP Port</label>
+                        <data_type>int</data_type>
+                        <default_value>993</default_value>
+                    </field>
+                    <field name="imap_username">
+                        <label>IMAP Username</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="imap_password">
+                        <label>IMAP Password</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="imap_options">
+                        <label>IMAP Options</label>
+                        <data_type>varchar</data_type>
+                        <max_length>128</max_length>
+                    </field>
+                    <field name="smtp_hostname">
+                        <label>SMTP Hostname</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="smtp_port">
+                        <label>SMTP Port</label>
+                        <data_type>int</data_type>
+                        <default_value>22</default_value>
+                    </field>
+                    <field name="smtp_security">
+                        <label>SMTP Security</label>
+                        <data_type>enum('None', 'TLS', 'SSL')</data_type>
+                        <default_value>None</default_value>
+                    </field>
+                    <field name="smtp_username">
+                        <label>SMTP Username</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="smtp_password">
+                        <label>SMTP Password</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="date_synced">
+                        <label>Last synced</label>
+                        <data_type>datetime</data_type>
+                    </field>
+                </table>
+                <table name="email_folder">
+                    <field name="email_folder_id" key="primary" auto-increment="Yes">
+                        <label>Email folder #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="email_account_id" key="foreign" referenced-table-name="email_account" referenced-field-name="email_account_id">
+                        <label>Email account #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="parent_email_folder_id" index="Yes">
+                        <label>Parent folder #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="type">
+                        <label>Folder type</label>
+                        <data_type>enum('Inbox', 'Outbox', 'Sent items', 'Drafts', 'Trash', 'Folder', 'Templates')</data_type>
+                        <default_value>Folder</default_value>
+                    </field>
+                    <field name="imap_name">
+                        <label>IMAP Name</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="label">
+                        <label>Label</label>
+                        <data_type>varchar</data_type>
+                        <max_length>128</max_length>
+                    </field>
+                    <field name="description">
+                        <label>Description</label>
+                        <data_type>text</data_type>
+                    </field>
+                    <field name="date_synced">
+                        <label>Date last synced</label>
+                        <data_type>datetime</data_type>
+                    </field>
+                </table>
+                <table name="email">
+                    <field name="email_id" key="primary" auto-increment="Yes">
+                        <label>Email #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="email_folder_id" key="foreign" referenced-table-name="email_folder" referenced-field-name="email_folder_id">
+                        <label>Email folder</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="name">
+                        <label>Name</label>
+                        <data_type>varchar</data_type>
+                        <max_length>255</max_length>
+                        <description>This is used by templates and will be missing on most emails.</description>
+                    </field>
+                    <field name="imap_message_id">
+                        <label>IMAP Message ID</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="imap_date">
+                        <label>IMAP Date</label>
+                        <data_type>datetime</data_type>
+                    </field>
+                    <field name="imap_message_fetched">
+                        <label>Message fetched</label>
+                        <description>Has the full message been downloaded from the IMAP server?</description>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="template">
+                        <label>Is template?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="draft">
+                        <label>Is draft?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="sent">
+                        <label>Has been sent?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="queued_to_send">
+                        <label>Queued to send?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                      <default_value>No</default_value>
+                    </field>
+                    <field name="received">
+                        <label>Has received?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="seen">
+                        <label>Has seen?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="answered">
+                        <label>Replied to?</label>
+                        <data_type>enum('Yes', 'No')</data_type>
+                        <default_value>No</default_value>
+                    </field>
+                    <field name="sender_name">
+                        <label>Sender name</label>
+                        <data_type>name</data_type>
+                    </field>
+                    <field name="sender_email">
+                        <label>Sender email address</label>
+                        <data_type>email_address</data_type>
+                    </field>
+                    <field name="sender_host">
+                        <label>Sender host</label>
+                        <data_type>varchar</data_type>
+                        <max_length>256</max_length>
+                    </field>
+                    <field name="subject">
+                        <label>Subject</label>
+                        <data_type>varchar</data_type>
+                        <max_length>512</max_length>
+                    </field>
+                    <field name="date_sent">
+                        <label>Date sent</label>
+                        <data_type>datetime</data_type>
+                    </field>
+                </table>
+                <table name="email_part">
+                    <field name="email_part_id" key="primary" auto-increment="Yes">
+                        <label>Email part #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="email_id" key="foreign" referenced-table-name="email" referenced-field-name="email_id">
+                        <label>Email #</label>
+                        <data_type>bigint</data_type>
+                    </field>
+                    <field name="content_type">
+                        <label>Content type</label>
+                        <data_type>varchar</data_type>
+                        <max_length>128</max_length>
+                        <nullable>No</nullable>
+                    </field>
+                    <field name="content_encoding">
+                        <label>Content encoding</label>
+                        <data_type>varchar</data_type>
+                        <max_length>128</max_length>
+                    </field>
+                    <field name="content">
+                        <label>Content</label>
+                        <data_type>longblob</data_type>
+                    </field>
+                    <field name="content_id">
+                        <label>Content ID</label>
+                        <data_type>varchar</data_type>
+                        <max_length>128</max_length>
+                    </field>
+                    <field name="filename">
+                        <label>Filename</label>
+                        <data_type>varchar</data_type>
+                        <max_length>64</max_length>
+                    </field>
+                </table>
+                <table name="email_recipient">
+                    <field name="email_recipient_id" data-type="bigint" key="primary" auto-increment="Yes" label="Recipient #" />
+                    <field name="email_id" data-type="bigint" key="foreign" referenced-field-name="email_id" referenced-table-name="email" label="Email #" />
+                    <field name="recipient_type" data-type="enum('to', 'cc', 'bcc')" default-value="to" label="Recipient type" />
+                    <field name="recipient_name" data-type="name" label="Name" />
+                    <field name="recipient_email" data-type="email_address" label="Email address" />
+                </table>
+                <table name="task">
+                    <record>
+                        <name>check_mail</name>
+                        <status>waiting</status>
+                        <label>Check email</label>
+                        <description>Checks email accounts for new mail</description>
+                        <class_name>\adapt\email\task_check_mail</class_name>
+                        <minutes>*/12</minutes>
+                        <hours>*</hours>
+                        <days_of_month>*</days_of_month>
+                        <days_of_week>*</days_of_week>
+                        <months>*</months>
+                    </record>
+                    <record>
+                        <name>send_mail</name>
+                        <status>waiting</status>
+                        <label>Sends email</label>
+                        <description>Sends out pending or scheduled emails</description>
+                        <class_name>\adapt\email\task_send_mail</class_name>
+                        <minutes>*</minutes>
+                        <hours>*</hours>
+                        <days_of_month>*</days_of_month>
+                        <days_of_week>*</days_of_week>
+                        <months>*</months>
+                    </record>
+                </table>
+            </add>
+        </schema>
+        <settings>
+            <category name="SMTP">
+                <setting>
+                    <name>email.smtp_localhost_name</name>
+                    <label>The FQD of the localehost sending the email</label>
+                    <default_value>localhost</default_value>
+                </setting>
+                <setting>
+                    <name>email.smtp_host</name>
+                    <label>The host being used to relay the email</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.smtp_port</name>
+                    <label>Port number of the SMTP server</label>
+                    <default_value>25</default_value>
+                </setting>
+                <setting>
+                    <name>email.smtp_security_layer</name>
+                    <label>Should the connection be secure?</label>
+                    <default_value>NO_SECURITY</default_value>
+                    <allowed_values>
+                        <value>NO_SECURITY</value>
+                        <value>SSL</value>
+                        <value>TLS</value>
+                    </allowed_values>
+                </setting>
+                <setting>
+                    <name>email.smtp_username</name>
+                    <label>Username</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.smtp_password</name>
+                    <label>Password</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.smtp_sender_email</name>
+                    <label>Sender email address</label>
+                    <default_value />
+                </setting>
+            </category>
+            <category name="IMAP">
+                <setting>
+                    <name>email.imap_host</name>
+                    <label>The IMAP host or IP</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.imap_port</name>
+                    <label>Port number of the IMAP server</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.imap_username</name>
+                    <label>Username</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.imap_password</name>
+                    <label>Password</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.imap_options</name>
+                    <label>Options</label>
+                    <default_value />
+                </setting>
+                <setting>
+                    <name>email.imap_folder</name>
+                    <label>Folder</label>
+                    <default_value>INBOX</default_value>
+                </setting>
+            </category>
+        </settings>
   </bundle>
 </adapt_framework>
