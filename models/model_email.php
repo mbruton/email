@@ -390,6 +390,8 @@ namespace adapt\email{
                 $raw .= $cc . "\r\n";
             }
             
+            $raw .= "MIME-Version: 1.0\r\n";
+            
             if ($this->date_sent){
                 $date = new \adapt\date($this->date_sent);
                 $raw .= "Date: " . $date->date('r') . "\r\n";
