@@ -105,10 +105,12 @@ namespace adapt\email{
                                     $template['sender_email'] = $template_child->get(0);
                                     $template['sender_name'] = $template_child->attr('name');
                                     break;
+                                case "email_account":
+                                    $template['email_account'] = $template_child->get(0);
+                                    break;
                                 }
                             }
                         }
-                        
                         $this->_templates[$bundle->name][] = $template;
                     }
                 }
@@ -129,7 +131,23 @@ namespace adapt\email{
                     $templates = $this->_templates[$bundle->name];
                     foreach($templates as $template){
                         $model_email = new model_email();
-                        $account = $this->store('email.account');
+                        if(isset($template['email_account'])){
+                            $sql = $this->data_source->sql;
+                            $sql->select('email_account_id')
+                                ->from('email_account')
+                                ->where(
+                                    new sql_and(
+                                        new sql_cond('name', sql::EQUALS, q($template['email_account'])),
+                                        new sql_cond('date_deleted', sql::IS, sql::NULL)
+                                    )
+                            );
+                            $results = $sql->execute()->results();
+                            if(count($results == 1)){
+                                $account = new \adapt\email\model_email_account($results[0]['email_account_id']);
+                            }
+                        }else{
+                            $account = $this->store('email.account');
+                        }
                         
                         if ($account instanceof model_email_account){
                             
