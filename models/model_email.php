@@ -360,9 +360,9 @@ namespace adapt\email{
                         }
                     }else{
                         if ($child->recipient_name){
-                            $to .= ", {$child->recipient_name} <{$child->recipient_email}>";
+                            $to .= ",{$child->recipient_name} <{$child->recipient_email}>";
                         }else{
-                            $to .= ", {$child->recipient_email}";
+                            $to .= ",{$child->recipient_email}";
                         }
                     }
                 }elseif ($child instanceof \adapt\model && $child->table_name == 'email_recipient' && $child->recipient_type == 'cc' && $child->recipient_email){
@@ -374,9 +374,9 @@ namespace adapt\email{
                         }
                     }else{
                         if ($child->recipient_name){
-                            $cc .= ", {$child->recipient_name} <{$child->recipient_email}>";
+                            $cc .= ",{$child->recipient_name} <{$child->recipient_email}>";
                         }else{
-                            $cc .= ", {$child->recipient_email}";
+                            $cc .= ",{$child->recipient_email}";
                         }
                     }
                 }
@@ -389,6 +389,8 @@ namespace adapt\email{
             if ($cc != ""){
                 $raw .= $cc . "\r\n";
             }
+            
+            $raw .= "MIME-Version: 1.0\r\n";
             
             if ($this->date_sent){
                 $date = new \adapt\date($this->date_sent);
