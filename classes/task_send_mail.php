@@ -30,15 +30,15 @@ namespace adapt\email{
             $emails_to_send = array();
             $email_count = 0;
             
-            foreach($accounts as $account_data){
+            foreach($accounts as $account_data) {
                 $account = new model_email_account();
                 
-                if ($account->load_by_data($account_data)){
+                if ($account->load_by_data($account_data)) {
                     $emails = $account->get_queued_email();
-                    
-                    if (count($emails)){
+
+                    if (count($emails)) {
                         $email_count = count($emails);
-                        
+
                         $emails_to_send[] = array(
                             'account' => $account,
                             'emails' => $emails
