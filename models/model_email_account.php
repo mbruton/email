@@ -876,12 +876,13 @@ namespace adapt\email{
                     ->where(
                         new sql_and(
                             new sql_cond('e.queued_to_send', sql::EQUALS, sql::q('Yes')),
+                            new sql_cond('a.email_account_id', sql::EQUALS, $this->email_account_id),
                             new sql_cond('e.date_deleted', sql::IS, new sql_null()),
                             new sql_cond('f.date_deleted', sql::IS, new sql_null()),
                             new sql_cond('a.date_deleted', sql::IS, new sql_null())
                         )
                     );
-                
+
                 $results = $sql->execute()->results();
                 
                 $emails = array();
